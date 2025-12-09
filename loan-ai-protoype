@@ -1,0 +1,405 @@
+# Loan AI Banking Chatbot - Complete Prototype Guide
+
+## Project Structure
+
+```
+agency-ai-banking-chatbot/
+├── backend/
+│   ├── app.py                    # Flask server
+│   ├── agents/
+│   │   ├── master_agent.py       # Master orchestrator
+│   │   ├── sales_agent.py        # Sales negotiation
+│   │   ├── verification_agent.py # KYC verification
+│   │   ├── underwriting_agent.py # Credit & eligibility
+│   │   └── sanction_agent.py     # Sanction letter generation
+│   ├── mocks/
+│   │   ├── crm_data.py           # Customer KYC data
+│   │   ├── credit_bureau.py      # Credit score API
+│   │   ├── offer_mart.py         # Pre-approved loan offers
+│   │   └── sample_customers.py   # 10 sample customers
+│   └── utils/
+│       ├── pdf_generator.py      # Sanction letter PDF
+│       └── logger.py             # Logging
+│
+├── frontend/
+│   ├── index.html                # Chat interface
+│   ├── style.css                 # Blue/Green/White theme
+│   └── script.js                 # WebSocket chat logic
+│
+├── presentation/
+│   └── Agency_AI_Loan_Sales_Presentation.pptx
+│
+└── README.md
+```
+
+## Key Files to Create
+
+### 1. Backend - Flask Server (app.py)
+- REST API endpoints for chat messages
+- WebSocket support for real-time messages
+- Master Agent orchestration logic
+
+### 2. Master Agent (master_agent.py)
+**Responsibilities:**
+- Receives all customer messages
+- Determines conversation stage (sales/verification/underwriting)
+- Routes to appropriate Worker Agent
+- Maintains conversation context
+- Aggregates results from Worker Agents
+- Decides next steps (approval/rejection/needs docs)
+- Triggers Sanction Letter Agent when all conditions met
+
+**Orchestration Logic:**
+```
+Stage 1: Sales Engagement (First 2-3 messages)
+├─ Detect customer interest in personal loan
+├─ Hand off to Sales Agent
+└─ Gather: amount needed, tenure preference, purpose
+
+Stage 2: KYC Verification (Next 2 messages)
+├─ Hand off to Verification Agent
+└─ Confirm: phone, address, pan from CRM
+
+Stage 3: Credit & Eligibility Check (Parallel processing)
+├─ Call Underwriting Agent
+├─ Fetch credit score from Credit Bureau API
+├─ Validate against pre-approved limits
+└─ Decide: instant approval, needs salary slip, or rejection
+
+Stage 4: If Salary Slip Needed
+├─ Request salary slip upload
+├─ Validate EMI ≤ 50% of salary
+└─ Re-evaluate approval
+
+Stage 5: Sanction Letter Generation
+├─ All conditions met → trigger Sanction Agent
+└─ Generate PDF and send to customer
+```
+
+### 3. Sales Agent (sales_agent.py)
+**Prompt:**
+```
+You are a persuasive sales executive for a personal loan company.
+Your goal is to:
+1. Build rapport with the customer
+2. Understand their financial needs
+3. Negotiate loan terms (amount, tenure, interest)
+4. Present attractive offers from offer mart
+5. Move customer toward approval
+
+Ask probing questions about:
+- Loan amount needed (min ₹50k, max pre-approved limit)
+- Tenure preference (6-60 months)
+- Interest rate expectations
+- Purpose of loan
+
+Keep responses conversational and under 150 words.
+Be persuasive but transparent about rates.
+```
+
+### 4. Verification Agent (verification_agent.py)
+**Logic:**
+```python
+def verify_kyc(customer_phone, customer_name):
+    """
+    Fetch from dummy CRM and confirm:
+    - Phone number matches
+    - Address on file
+    - PAN details
+    """
+    customer = CRM_DATABASE.get(customer_phone)
+    if customer:
+        return {
+            "verified": True,
+            "name": customer['name'],
+            "phone": customer['phone'],
+            "address": customer['address'],
+            "pan": customer['pan']
+        }
+    else:
+        return {"verified": False, "error": "Customer not found"}
+```
+
+### 5. Underwriting Agent (underwriting_agent.py)
+**Logic:**
+```python
+def evaluate_eligibility(customer_id, requested_amount, customer_tenure):
+    """
+    1. Fetch credit score from Credit Bureau API
+    2. Get pre-approved limit from Offer Mart
+    3. Apply eligibility rules:
+       
+       IF credit_score < 700:
+           → REJECT
+       
+       IF requested_amount <= pre_approved_limit:
+           → INSTANT APPROVAL
+       
+       IF requested_amount <= 2 * pre_approved_limit:
+           → REQUEST SALARY SLIP
+           → Validate: Expected EMI <= 50% of salary
+           → APPROVE/REJECT based on validation
+       
+       IF requested_amount > 2 * pre_approved_limit:
+           → REJECT
+    """
+```
+
+### 6. Sanction Agent (sanction_agent.py)
+**Generates PDF with:**
+- Customer name, PAN, phone
+- Approved loan amount
+- Tenure and interest rate
+- EMI calculation
+- Terms & conditions
+- Bank account details (dummy)
+- Sanction date and validity
+
+### 7. Mock CRM Data (crm_data.py)
+```python
+CRM_DATABASE = {
+    "9876543210": {
+        "name": "Rahul Kumar",
+        "age": 28,
+        "city": "Bangalore",
+        "phone": "9876543210",
+        "pan": "AAUPA1234K",
+        "address": "123 Main St, Bangalore",
+        "salary": 50000,  # Monthly
+        "existing_loans": [{"type": "auto", "emi": 8000}],
+        "pre_approved_limit": 200000
+    },
+    # ... 9 more customers
+}
+```
+
+### 8. Mock Credit Bureau API
+```python
+def get_credit_score(pan):
+    """Returns credit score out of 900"""
+    # Simulate API call
+    scores = {
+        "AAUPA1234K": 750,
+        "BBUPB5678L": 680,  # Low score - will reject
+        # ...
+    }
+    return scores.get(pan, 600)  # Default low score
+```
+
+### 9. Frontend Chat Interface (index.html)
+Features:
+- Chatbot UI with messages
+- Real-time message display
+- File upload for salary slip
+- Show customer context (loan status)
+- Display sanction letter download link
+- Professional blue/green/white color scheme
+- Icons for different message types
+
+### 10. Sample Conversation Flow
+
+**Customer:** "Hi, I'm looking for a personal loan"
+
+**Master Agent** (hands to Sales Agent):
+"Hello! 👋 I'm your personal loan specialist. I'd be happy to help you find the perfect loan. Can you tell me:
+1. How much do you need? (₹50k - ₹10L range typically)
+2. What's the purpose - home renovation, wedding, education?
+3. Your preferred tenure?"
+
+**Customer:** "I need ₹2 lakhs for my wedding, 3 years"
+
+**Sales Agent:** 
+"Perfect! A ₹2L loan for 3 years at our current rate of 12% would mean ₹6,440 monthly EMI. That's quite attractive! 
+Before we proceed, I'll need to verify a few details. What's your phone number registered with us?"
+
+**Customer:** "9876543210"
+
+**Master Agent** (hands to Verification Agent):
+[Verifies against CRM] ✓
+
+**Master Agent** (hands to Underwriting Agent):
+[Fetches credit score: 750 ✓]
+[Checks: ₹2L vs pre-approved limit of ₹3L] ✓
+[INSTANT APPROVAL]
+
+**Master Agent** (hands to Sanction Agent):
+[Generates sanction letter PDF]
+[Sends to customer]
+
+"Congratulations! 🎉 Your loan of ₹2,00,000 has been approved!
+Interest rate: 12% p.a.
+Monthly EMI: ₹6,440
+Tenure: 36 months
+
+Your sanction letter is ready for download. Would you like to proceed to disbursal?"
+
+---
+
+## Sample Customer Data (10 Customers)
+
+| Name | Phone | City | Salary | Pre-Approved Limit | Credit Score | Status |
+|------|-------|------|--------|-------------------|--------------|--------|
+| Rahul Kumar | 9876543210 | Bangalore | 50,000 | 2,00,000 | 750 | Active |
+| Priya Sharma | 8765432109 | Delhi | 45,000 | 1,80,000 | 680 | Active (Low Score) |
+| Amit Patel | 7654321098 | Mumbai | 60,000 | 2,50,000 | 800 | Active |
+| Neha Singh | 6543210987 | Pune | 40,000 | 1,50,000 | 720 | Active |
+| Vikas Verma | 5432109876 | Hyderabad | 55,000 | 2,20,000 | 765 | Active |
+| Anjali Desai | 4321098765 | Ahmedabad | 48,000 | 1,90,000 | 700 | Borderline |
+| Ravi Tiwari | 3210987654 | Jaipur | 52,000 | 2,10,000 | 810 | Active |
+| Sneha Nair | 2109876543 | Kochi | 42,000 | 1,60,000 | 740 | Active |
+| Nikhil Reddy | 1098765432 | Bangalore | 58,000 | 2,30,000 | 695 | Low Score |
+| Divya Kapoor | 9123456789 | NCR | 51,000 | 2,05,000 | 755 | Active |
+
+---
+
+## Edge Cases Handled
+
+### Case 1: Instant Approval
+- Loan amount ≤ pre-approved limit
+- Credit score ≥ 700
+- → Generate sanction letter immediately
+
+### Case 2: Needs Salary Slip
+- Loan amount between pre-approved and 2× limit
+- Credit score ≥ 700
+- → Request salary slip upload
+- → Validate EMI ≤ 50% of salary
+- → Approve/Reject based on validation
+
+### Case 3: Rejection - Low Credit Score
+- Credit score < 700
+- → Politely reject and suggest improving credit profile
+
+### Case 4: Rejection - Excessive Amount
+- Loan amount > 2× pre-approved limit
+- → Explain limit and suggest alternative amounts
+
+### Case 5: Incomplete KYC
+- Phone not registered in CRM
+- → Request details and create new CRM record
+
+---
+
+## API Endpoints
+
+### POST /chat
+Send customer message, receive agent response
+```json
+Request: {"message": "I need a ₹2L loan", "customer_id": "9876543210"}
+Response: {
+  "agent_response": "Let me check your eligibility...",
+  "stage": "underwriting",
+  "status": "in_progress"
+}
+```
+
+### POST /upload-salary-slip
+Upload salary slip for salary verification
+```json
+Request: {"customer_id": "...", "file": <binary>}
+Response: {"status": "verified", "monthly_salary": 50000}
+```
+
+### GET /sanction-letter/:customer_id
+Download generated sanction letter
+```json
+Response: <PDF binary>
+```
+
+### GET /customer-status/:customer_id
+Get current loan application status
+```json
+Response: {
+  "customer": "Rahul Kumar",
+  "loan_amount": 200000,
+  "status": "approved",
+  "emi": 6440,
+  "sanction_date": "2025-12-09"
+}
+```
+
+---
+
+## Technology Stack
+
+- **Backend:** Python (Flask, Flask-SocketIO)
+- **LLM:** Claude API / OpenAI GPT-4 (for agents)
+- **Frontend:** HTML5, CSS3, JavaScript (WebSocket)
+- **PDF Generation:** ReportLab (Python)
+- **Database:** Mock in-memory (can extend to PostgreSQL)
+- **Deployment:** Docker + GitHub (ready for cloud)
+
+---
+
+## Implementation Steps
+
+1. **Create Flask backend** with Master Agent logic
+2. **Implement Worker Agents** using LLM (Claude/GPT-4)
+3. **Build Mock APIs** for CRM, Credit Bureau, Offer Mart
+4. **Create Frontend UI** with professional design
+5. **Test edge cases** with sample customer data
+6. **Generate sample sanction letters** as PDFs
+7. **Create 5-slide presentation** with workflow visuals
+
+---
+
+## Presentation Structure (5 Slides)
+
+1. **Slide 1: Problem & Solution**
+   - NBFC challenge: Low personal loan sales
+   - Solution: AI-powered conversational sales chatbot
+   - Key benefit: 24/7 availability, personalized approach
+
+2. **Slide 2: Architecture Overview**
+   - Master Agent orchestrator diagram
+   - 5 Worker Agents (Sales, Verification, Underwriting, Sanction, etc.)
+   - Workflow stages
+
+3. **Slide 3: Customer Journey**
+   - Chat flow from first message to sanction
+   - Decision points and handoffs
+   - Sample customer conversation (Rahul Kumar example)
+
+4. **Slide 4: Edge Cases & Handling**
+   - Instant approval scenario
+   - Salary slip validation flow
+   - Rejection handling (low credit, excessive amount)
+
+5. **Slide 5: Results & Impact**
+   - Conversion metrics (target 35-40% approval rate)
+   - Time to approval (target <5 minutes)
+   - Customer satisfaction improvement
+   - Revenue impact (estimated ₹X Cr through increased approvals)
+
+---
+
+## Success Metrics
+
+1. **Conversion Rate:** % of website visitors who complete loan application
+2. **Approval Rate:** % of applications approved (target 35-40%)
+3. **Time to Approval:** Minutes from first chat to sanction letter (target <5 min)
+4. **Customer Satisfaction:** NPS score on chatbot experience
+5. **Loan Amount Approved:** Average loan size and total disbursement value
+
+---
+
+## Next Steps for Production
+
+1. Integrate real CRM and credit bureau APIs
+2. Add database (PostgreSQL) for persistence
+3. Implement document verification (OCR)
+4. Add compliance checks (AML, KYC regulations)
+5. Deploy on cloud (AWS/Azure with auto-scaling)
+6. Add analytics dashboard for sales tracking
+7. Implement A/B testing for conversation flows
+8. Add multi-language support (Hindi, regional languages)
+
+---
+
+This prototype demonstrates:
+✅ Multi-agent orchestration with Master-Worker pattern
+✅ Realistic banking workflows
+✅ Edge case handling
+✅ PDF sanction letter generation
+✅ Professional conversational AI
+✅ Complete end-to-end automation from chat to approval

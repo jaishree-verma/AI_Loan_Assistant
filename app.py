@@ -18,7 +18,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from io import BytesIO
 import re
 
-# ==================== HELPERS ====================
 
 def is_yes(text: str) -> bool:
     t = text.strip().lower()

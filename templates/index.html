@@ -10,7 +10,7 @@
   />
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #1c1f4a 0%, #3b82f6 40%, #22c55e 100%);
+      --bg-gradient: linear-gradient(135deg, #0010ed 0%, #ffffff 40%, #22c55e 100%);
       --navy: #0f172a;
       --brand: #16a34a;
       --brand-soft: rgba(34, 197, 94, 0.12);
@@ -468,7 +468,7 @@
 </head>
 <body>
   <div class="shell">
-    <!-- Left info panel -->
+    
     <aside class="panel">
       <div>
         <div class="brand-row">
@@ -476,15 +476,37 @@
             <i class="fa-solid fa-building-columns"></i>
           </div>
           <div>
-            <div class="brand-text-main">Tata Capital</div>
-            <div class="brand-text-sub">Personal Loan – NBFC Prototype</div>
+            <div class="brand-text-main">NFBC Protoype</div>
+            <div class="brand-text-sub">Personal Loan</div>
           </div>
         </div>
 
         <div class="stat-card">
-          <div class="stat-label">Application Status</div>
+          <div class="stat-label">Loan Status</div>
           <div class="stat-main">
             <span id="status">Pending</span>
+            <span class="pill" id="stagePill">INTRO</span>
+          </div>
+          <div class="badge-stage pending" id="stageBadge">
+            <span></span>
+            <small>Awaiting customer details</small>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Loan Status</div>
+          <div class="stat-main">
+            <span id="status">Rejected</span>
+            <span class="pill" id="stagePill">INTRO</span>
+          </div>
+          <div class="badge-stage pending" id="stageBadge">
+            <span></span>
+            <small>Awaiting customer details</small>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Loan Status</div>
+          <div class="stat-main">
+            <span id="status">Accepted</span>
             <span class="pill" id="stagePill">INTRO</span>
           </div>
           <div class="badge-stage pending" id="stageBadge">
@@ -516,7 +538,7 @@
       </p>
     </aside>
 
-    <!-- Chat card -->
+    
     <section class="chat-card">
       <header class="chat-header">
         <div class="chat-header-left">
@@ -542,7 +564,7 @@
             <i class="fa-regular fa-comments"></i>
           </div>
           <div>
-            <strong>Welcome to Tata Capital.</strong>
+            <strong>Welcome to NFBC Prototype</strong>
           </div>
           <p>Share your requirement and the assistant will guide you from first enquiry to sanction letter.</p>
         </div>
@@ -673,7 +695,7 @@
 
         addMessage(data.response, "agent");
 
-        // status panel
+        
         statusEl.textContent =
           data.status && data.status !== "pending"
             ? data.status.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())
@@ -726,8 +748,8 @@
     window.addEventListener("load", () => {
       setTimeout(() => {
         addMessage(
-          "Hi, welcome to Non-Banking Financial Company! We’re helping customers get personal loans with quick approvals and low interest rates — no paperwork and instant eligibility check.\n\n" +
-          "Can I ask what kind of financial goal you’re planning — education, travel, home upgrade, debt consolidation, or something else?",
+          "Hi, welcome to Non-Banking Financial Company! We’re helping customers get personal loans with quick approvals and low interest rates - no paperwork and instant eligibility check.\n\n" +
+          "Can I ask what kind of financial goal you’re planning - education, travel, home upgrade, debt consolidation, or something else?",
           "agent"
         );
       }, 500);
