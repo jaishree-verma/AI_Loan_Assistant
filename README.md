@@ -1,13 +1,2 @@
-﻿## AI_Loan_Assistant
-### EY TECHATHON 6.0 ROUND 2 
-
-
-
-
-
-
-
-
-
-
-
+## AI_Loan_Assistant 
+### AI based loan requirement chatbot. This bot can be used by any banking system to provide loan to users. 
